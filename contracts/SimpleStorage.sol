@@ -17,7 +17,10 @@ contract SimpleStorage {
     People[] public person;
     mapping(string => uint256) public nameToNum;
 
-    function store(uint256 _number) public {
+    // virtual keyword is added so that, the store function can be override
+    // from another function of another contract which will inherit the
+    // SimpleStorage contract
+    function store(uint256 _number) public virtual {
         number = _number;
         // number = number + 1;
     }
