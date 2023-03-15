@@ -8,7 +8,7 @@ import "./SimpleStorage.sol";
 
 // inheriting SimpleStorage contract into this contract.
 // all SimpleStorage functions can be used directly without any variables
-// of ExtraStorage contract after inheriting.
+// of ExtraStorage contract
 contract ExtraStorage is SimpleStorage {
 
     // overriding the store function of SimpleStorage contract.
