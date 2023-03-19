@@ -11,15 +11,24 @@ import "./PriceConverter.sol";
 contract FundMe {
     using PriceConverter for uint256;
     
-    uint256 minUSD = 50 * 1e18;
+    uint256 public minUSD = 50 * 1e18;
         // minUSD is multiplied with 1e18 to match the decimal place
         // of the ETH value which is 1e18
     
     // list of funders 
     address[] public funders;
+    address public owner;
 
     // apping the fund address to the fund amount
-    mapping(address => uint256) addToAmount;
+    mapping(address => uint256) public addToAmount;
+
+    // A constructor is called immidiately after the contract is deployed
+    // With this constructor we are setting up who the owner of the contract is
+    // The owner of the contract will be the who deploys the contract
+    constructor() {
+        owner = msg.sender;
+    }
+
 
     // function to allow users to send funds
     // the payable keyword at the end is used to make function payable.
@@ -29,7 +38,7 @@ contract FundMe {
     // can hold blockchain token
     // to access the value attribute we have to use the global keyword msg.value
     function fund() public payable {
-        
+
         // setting the minimum fund to 1ETH
         // 1 ETH = 1e18 wei. values are calculated in wei in the code.
         // Thus we have to convert it if we want to use different unit
@@ -58,13 +67,76 @@ contract FundMe {
         funders.push(msg.sender);
 
         // mapping the sender address to sender's fund amount
-        addToAmount[msg.sender] = msg.value;
+        addToAmount[msg.sender] += msg.value;
 
         // msg.value ---> number of wei sent with the message
         // msg.sender --> address of the sender of the message
     }
 
-    // function withdraw() {}
+    // function to withdraw the funded money
+    function withdraw() public onlyOwner {
+
+        // This will make sure that the withdraw function can only be used by the owner
+        // require(msg.sender == owner, "Administrator only");
+
+        // resetting the fund amount of every funder in funders list/array
+        for (uint256 i = 0; i < funders.length; i++) {
+            // accessing the address of the ith funder
+            address funder = funders[i];
+
+            // making the address amount 0 of the ith funder
+            addToAmount[funder] = 0;
+        }
+        // even if we reset the fund amount of the funders, their addresses are still
+        // there in the funders list/array
+
+        // resetting the funders array
+        funders = new address[](0);
+        // will delete all the addresses of the funders from the funders array
+
+        // to actually withdraw the fund have to be sent which can be done in 3 ways:
+            
+            // transfer: throws an error and reverts the transaction if it wasn't successful
+            // payable(msg.sender).transfer(address(this).balance);
+            // it says transer the balance of the address. where the address refers
+            // to this (the contract we are in) contract.
+            // we're using the payable keyword because only the payable function/address
+            // can send funds.          msg.sender  = address
+            //                  payable(msg.sender) = payable address
+
+
+            // send: returns true if the transaction was successfull and false if not.
+            //       but the contract wouldn't be reverted.
+            // bool transactionStatus = payable(msg.sender).send(address(this).balance);
+            // require(transactionStatus, "Transaction Failed"); // making sure that incomplete
+                                                              // transactions are reverted.
+            
+            // call: a low level command
+            // demo command of call
+            //      (bool callSuccess, bytes memory dataReturned) = payable(msg.sender).call{value: address(this).balance}("");
+            // we just need the bool callSuccess so we will type:
+            (bool callSuccess, ) = payable(msg.sender).call{value: address(this).balance}("");
+            require(callSuccess, "Transaction Failed"); // to revert the transaction if failed
+            // the recommended way of sending or receiving blockchain tokens is call.
+    }
+
+    // With the modifier we can use whatever method is given in it in any function.
+    // we just have to add the name of the modifier at the end of the function declaration.
+    modifier onlyOwner {
+        require(msg.sender == owner, "Administrator only");
+        _; // this represents the code in the function.
+
+        // Here the first line is the method which we can use any function.
+        // The second line represents the code in that function
+
+        // So, these two line means that where ever we are going to use this modifier
+        // first the require method will execute then the code in the function will execute.
+
+        // If we want to execute the methods in the function first then the method
+        // in the modifier then the code will be like this:
+            // _;
+            // require(msg.sender == owner, "Administrator only");
+    }
 }
 
 // Chainlink Data Feeds: Powering over $50 billion in DeFi world
@@ -81,3 +153,5 @@ contract FundMe {
 // Chainlink VRF: Chainlink Verifiable Randomness Function
 
 // Chainlink Keepers: Decentralized Event-Driven Execution
+
+
